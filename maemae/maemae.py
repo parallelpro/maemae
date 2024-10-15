@@ -1,9 +1,14 @@
 import numpy as np
+import jax
+jax.config.update('jax_enable_x64', True)
+
+from jax import jit
+from jax import numpy as jnp
 
 # Conversion factor from cycles per day (cpd) to microhertz (μHz)
 CPD_TO_MICROHZ = 1/86400 * 1e6
 
-
+@jit
 def gold_deconvolution(y, kernel, n_iterations=100,):
     '''
     gold algorithm deconvlution, Morhac (2003), matrix multiplication.
@@ -12,13 +17,13 @@ def gold_deconvolution(y, kernel, n_iterations=100,):
     L = kernel.shape[0] # length of kernel
     N = y.shape[0] # length of output data
     
-    x0 = np.copy(y) # length of input data
+    x0 = jnp.copy(y) # length of input data
 
     ks = 0
     kc = kernel.shape[0]//2
     kn = kernel.shape[0]
 
-    H = np.zeros((N, N))
+    H = jnp.zeros((N, N))
     for i in range(N):
         i_start = max(0, i-(kc-ks))
         i_end = min(H.shape[1], i + kn - kc)
@@ -35,31 +40,32 @@ def gold_deconvolution(y, kernel, n_iterations=100,):
 
     return x0
 
-
+@jit
 def opt_gold_deconvolution(y, kernel, n_iterations=1000,):
     '''
-    gold algorithm deconvlution, Morhac (2003), use vector to speed up.
+    gold algorithm deconvolution, Morhac (2003), use vector to speed up.
     '''
 
     # L = kernel.shape[0] # length of kernel
     # N = y.shape[0] # length of input data
     # M = N + L - 1 # length of output data
 
-    x0 = np.copy(y) # length of input data
+    x0 = jnp.copy(y) # length of input data
 
     h = kernel
-    vector_B = np.correlate(h, h, mode='same')
-    vector_c = np.convolve(vector_B, vector_B, mode='full')
+    vector_B = jnp.correlate(h, h, mode='same')
+    vector_c = jnp.convolve(vector_B, vector_B, mode='full')
 
-    vector_p = np.correlate(y, h, mode='full')
-    vector_yp = np.correlate(vector_p, vector_B, mode='valid')
+    vector_p = jnp.correlate(y, h, mode='full')
+    vector_yp = jnp.correlate(vector_p, vector_B, mode='valid')
 
     for _ in range(n_iterations):
-        vector_z = np.correlate(x0, vector_c, mode='same')
+        vector_z = jnp.correlate(x0, vector_c, mode='same')
         x0 = x0 * vector_yp / vector_z
         
     return x0
 
+@jit
 def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
     '''
     richardson lucy deconvolution, Morháč & Matoušek (2011)
@@ -69,15 +75,15 @@ def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
     # N = y.shape[0] # length of input data
     # M = N + L - 1 # length of output data
 
-    x0 = np.copy(y) # length of input data
+    x0 = jnp.copy(y) # length of input data
 
     for _ in range(n_iterations):
-        # den = np.correlate(x0, kernel, mode='same')
-        x0 = x0 * np.correlate(y / np.correlate(x0, kernel, mode='same') ** γ, kernel, mode='same')
+        # den = jnp.correlate(x0, kernel, mode='same')
+        x0 = x0 * jnp.correlate(y / jnp.correlate(x0, kernel, mode='same') ** γ, kernel, mode='same')
 
     return x0
 
-
+@jit
 def chi2_deconvolution(y, kernel, n_iterations=1000):
     '''
     deconvolution assuming the noise model is distributed as χ^2 with dof = 2.
@@ -87,17 +93,18 @@ def chi2_deconvolution(y, kernel, n_iterations=1000):
     # N = y.shape[0] # length of input data
     # M = N + L - 1 # length of output data
 
-    x0 = np.copy(y) # length of input data
+    x0 = jnp.copy(y) # length of input data
 
     h = kernel
 
     for _ in range(n_iterations):
-        num = np.correlate(y / np.correlate(x0, kernel, mode='same')**2., kernel, mode='same')
-        den = np.correlate(1 / np.correlate(x0, kernel, mode='same'), kernel, mode='same')
+        num = jnp.correlate(y / jnp.correlate(x0, kernel, mode='same')**2., kernel, mode='same')
+        den = jnp.correlate(1 / jnp.correlate(x0, kernel, mode='same'), kernel, mode='same')
         x0 = x0 * num / den
 
     return x0
 
+@jit
 def maximum_a_posteriori_deconvolution(y, kernel, n_iterations=1000,):
     '''
     richardson lucy deconvolution, V. Matousek & M. Morhac (2014)
@@ -107,10 +114,10 @@ def maximum_a_posteriori_deconvolution(y, kernel, n_iterations=1000,):
     # N = y.shape[0] # length of input data
     # M = N + L - 1 # length of output data
 
-    x0 = np.copy(y) # length of input data
+    x0 = jnp.copy(y) # length of input data
 
     for _ in range(n_iterations):
-        # den = np.correlate(x0, kernel, mode='same')
-        x0 = x0 * np.exp( np.correlate(y / np.correlate(x0, kernel, mode='same') - 1, kernel, mode='same') )
+        # den = jnp.correlate(x0, kernel, mode='same')
+        x0 = x0 * jnp.exp( jnp.correlate(y / jnp.correlate(x0, kernel, mode='same') - 1, kernel, mode='same') )
 
     return x0
