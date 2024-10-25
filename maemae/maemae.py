@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+from functools import partial
 import numpy as np
 import jax
 jax.config.update('jax_enable_x64', True)
@@ -8,7 +10,7 @@ from jax import numpy as jnp
 # Conversion factor from cycles per day (cpd) to microhertz (μHz)
 CPD_TO_MICROHZ = 1/86400 * 1e6
 
-@jit
+@partial(jit, static_argnums=(2,))
 def gold_deconvolution(y, kernel, n_iterations=100,):
     '''
     gold algorithm deconvlution, Morhac (2003), matrix multiplication.
@@ -40,7 +42,7 @@ def gold_deconvolution(y, kernel, n_iterations=100,):
 
     return x0
 
-@jit
+@partial(jit, static_argnums=(2,))
 def opt_gold_deconvolution(y, kernel, n_iterations=1000,):
     '''
     gold algorithm deconvolution, Morhac (2003), use vector to speed up.
@@ -65,7 +67,7 @@ def opt_gold_deconvolution(y, kernel, n_iterations=1000,):
         
     return x0
 
-@jit
+@partial(jit, static_argnums=(2,3))
 def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
     '''
     richardson lucy deconvolution, Morháč & Matoušek (2011)
@@ -83,7 +85,7 @@ def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
 
     return x0
 
-@jit
+@partial(jit, static_argnums=(2,))
 def chi2_deconvolution(y, kernel, n_iterations=1000):
     '''
     deconvolution assuming the noise model is distributed as χ^2 with dof = 2.
@@ -104,7 +106,7 @@ def chi2_deconvolution(y, kernel, n_iterations=1000):
 
     return x0
 
-@jit
+@partial(jit, static_argnums=(2,))
 def maximum_a_posteriori_deconvolution(y, kernel, n_iterations=1000,):
     '''
     richardson lucy deconvolution, V. Matousek & M. Morhac (2014)
