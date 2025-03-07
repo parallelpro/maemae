@@ -7,7 +7,7 @@ def window_function_brute(ωω, tt, TT):
     Given a time series with midpoint times t_k and exposure
     times T_k, this is
 
-    n = [\sum_k e^(i ω t_k) T_k sinc(ω T_k / 2)]/π.
+    n = [\sum_k e^(i ω t_k) T_k sinc(ω T_k / 2)]/sqrt(π).
 
     We moreover divide this by d = sqrt(\sum_k T_k) so that
     the integral of |n/d|^2 with respect to ω is 1 by Parseval's Theorem.
