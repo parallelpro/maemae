@@ -8,5 +8,5 @@ setup(
     description='A description of your package',
     author='Your Name',
     author_email='your.email@example.com',
-    install_requires=['numpy', 'scipy', 'jax', 'jaxlib']  # Add any dependencies if needed
+    install_requires=['numpy', 'scipy', 'jax', 'jaxlib', 'finufft']  # Add any dependencies if needed
 )
