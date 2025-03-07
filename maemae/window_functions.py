@@ -7,7 +7,7 @@ def window_function_brute(ωω, tt, TT):
     Given a time series with midpoint times t_k and exposure
     times T_k, this is
 
-    n = [\sum_k e^(i ω t_k) T_k sinc(ω T_k / 2)]/sqrt(π).
+    n = [\sum_k e^(i ω t_k) T_k sinc(ω T_k / 2)]/sqrt(2π).
 
     We moreover divide this by d = sqrt(\sum_k T_k) so that
     the integral of |n/d|^2 with respect to ω is 1 by Parseval's Theorem.
@@ -34,7 +34,7 @@ def window_function_brute(ωω, tt, TT):
     summand = np.exp(1j * ωω[:,None]  * tt[None, :]) * (TT[None,:] * np.sinc(ωω[:,None]/2/np.pi*TT[None,:]))
     s = np.sum(summand, axis=1)
     
-    return s / (np.sqrt(np.pi) * np.sum(TT))
+    return s / np.sqrt(2 * np.pi * np.sum(TT))
 
 def window_function_nufft(N, δω, tt, TT):
     '''
@@ -74,4 +74,40 @@ def window_function_nufft(N, δω, tt, TT):
     tr2 = finufft.nufft1d1(x2, ones, n_modes=N)
     s = np.where(ωω == 0, np.sum(times), (tr1 - tr2) / ωω / 1j)
     
-    return ωω, s / np.sqrt(np.pi * np.sum(times))
+    return ωω, s / np.sqrt(2 * np.pi * np.sum(times))
+
+def window_function_delta_nufft(N, δω, tt):
+    '''
+    Fast evaluation of the spectral window function
+    of a series of delta functions,
+    using the Flatiron Nonuniform FFT package.
+
+    Inputs
+    ------
+
+    N: number of frequency samples
+    δω: Desired frequency sampling
+    tt: 1D ndarray of delta-function locations
+
+    The units of δω and tt should be such that δω * tt
+    is in units of radians.
+
+    The units of TT and tt should be the same.
+
+    Outputs
+    -------
+    ωω: Frequency samples
+    W: Fourier transform of the window function,
+       with unit Parseval normalisation
+    '''
+    
+    # in finufft, the fourier components are indexed by simply integers.
+    NN = np.arange(N) - np.ceil(N/2)
+    ωω = NN * δω
+    
+    ones = np.ones_like(tt).astype(np.complex128)
+    x = tt * δω
+    
+    s = finufft.nufft1d1(x, ones, n_modes=N)
+    
+    return ωω, s / np.sqrt(2 * np.pi * np.sum(ones))
