@@ -10,7 +10,7 @@ def window_function_brute(ωω, tt, TT):
     n = [\sum_k e^(i ω t_k) T_k sinc(ω T_k / 2)]/π.
 
     We moreover divide this by d = sqrt(\sum_k T_k) so that
-    the integral with respect to ω is 1 by Parseval's Theorem.
+    the integral of |n/d|^2 with respect to ω is 1 by Parseval's Theorem.
 
     Inputs
     ------
