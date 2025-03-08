@@ -62,7 +62,7 @@ def window_function_nufft(N, δω, tt, TT):
     '''
     
     # in finufft, the fourier components are indexed by simply integers.
-    NN = np.arange(N) - np.ceil(N/2)
+    NN = np.arange(N) - np.floor(N/2)
     ωω = NN * δω
     
     ones = np.ones_like(tt).astype(np.complex128)
@@ -102,7 +102,7 @@ def window_function_delta_nufft(N, δω, tt):
     '''
     
     # in finufft, the fourier components are indexed by simply integers.
-    NN = np.arange(N) - np.ceil(N/2)
+    NN = np.arange(N) - np.floor(N/2)
     ωω = NN * δω
     
     ones = np.ones_like(tt).astype(np.complex128)
