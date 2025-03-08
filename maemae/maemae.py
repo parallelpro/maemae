@@ -29,7 +29,7 @@ def gold_deconvolution(y, kernel, n_iterations=100,):
     for i in range(N):
         i_start = max(0, i-(kc-ks))
         i_end = min(H.shape[1], i + kn - kc)
-        H[i, i_start:i_end] = kernel[(kc-(i-i_start)):(kc+(i_end-i))]
+        H = H.at[i, i_start:i_end].set(kernel[(kc-(i-i_start)):(kc+(i_end-i))])
 
     # gold algorithm
     # Hp = H.T @ H @ H.T @ H
@@ -38,7 +38,7 @@ def gold_deconvolution(y, kernel, n_iterations=100,):
     yp = H.T @ H @ H.T @ y
 
     for i in range(n_iterations):
-        x0 = x0 * yp / (Hp @ x0)
+        x0 = jnp.nan_to_num(x0 * yp / (Hp @ x0))
 
     return x0
 
@@ -56,16 +56,16 @@ def opt_gold_deconvolution(y, kernel, n_iterations=1000,):
 
     h = kernel
     vector_B = jnp.correlate(h, h, mode='same')
-    vector_c = jnp.convolve(vector_B, vector_B, mode='full')
+    vector_c = jnp.convolve(vector_B, vector_B, mode='same')
 
-    vector_p = jnp.correlate(y, h, mode='full')
-    vector_yp = jnp.correlate(vector_p, vector_B, mode='valid')
+    vector_p = jnp.correlate(y, h, mode='same')
+    vector_yp = jnp.correlate(vector_p, vector_B, mode='same')
 
-    for _ in range(n_iterations):
+    def _body(i, x0):
         vector_z = jnp.correlate(x0, vector_c, mode='same')
-        x0 = x0 * vector_yp / vector_z
-        
-    return x0
+        return x0 * vector_yp / vector_z
+
+    return jax.lax.fori_loop(0, n_iterations, _body, x0)
 
 @partial(jit, static_argnums=(2,3))
 def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
@@ -79,11 +79,11 @@ def richardson_lucy_deconvolution(y, kernel, n_iterations=1000, γ=1):
 
     x0 = jnp.copy(y) # length of input data
 
-    for _ in range(n_iterations):
+    def _body(i, x0):
         # den = jnp.correlate(x0, kernel, mode='same')
-        x0 = x0 * jnp.correlate(y / jnp.correlate(x0, kernel, mode='same') ** γ, kernel, mode='same')
+        return x0 * jnp.correlate(y / jnp.correlate(x0, kernel, mode='same') ** γ, kernel, mode='same')
 
-    return x0
+    return jax.lax.fori_loop(0, n_iterations, _body, x0)
 
 @partial(jit, static_argnums=(2,))
 def chi2_deconvolution(y, kernel, n_iterations=1000):
